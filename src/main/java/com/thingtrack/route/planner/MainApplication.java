@@ -16,6 +16,14 @@
 
 package com.thingtrack.route.planner;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+
 import org.vaadin.addons.locationtextfield.GeocodedLocation;
 import org.vaadin.addons.locationtextfield.GoogleGeocoder;
 import org.vaadin.addons.locationtextfield.LocationTextField;
@@ -24,7 +32,12 @@ import org.vaadin.vol.Marker;
 import org.vaadin.vol.MarkerLayer;
 import org.vaadin.vol.OpenLayersMap;
 import org.vaadin.vol.OpenStreetMapLayer;
+import org.vaadin.vol.Point;
+import org.vaadin.vol.PolyLine;
+import org.vaadin.vol.Vector;
+import org.vaadin.vol.VectorLayer;
 
+import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.VerticalLayout;
@@ -42,14 +55,12 @@ public class MainApplication extends com.vaadin.Application {
 	private OpenStreetMapLayer openStreetMapLayer;
 	private GoogleStreetMapLayer googleStreetMapLayer;
 	private MarkerLayer markerLayer;
+	VectorLayer polylinesLayer;
 	private Marker originStopMarker;
 	private Marker destinationStopMarker;
 	private LocationTextField<GeocodedLocation> originStopLocationTextField;
 	private LocationTextField<GeocodedLocation> destinationStopLocationTextField;
 	private final GoogleGeocoder geocoder = GoogleGeocoder.getInstance();
-
-	/* Another component. */
-	Label colorname;
 
 	@Override
 	public void init() {
@@ -59,7 +70,20 @@ public class MainApplication extends com.vaadin.Application {
 
 		setMainWindow(main);
 
-		setTheme("mytheme");
+		setTheme("router.planner");
+		
+		//TEST OPENLAYERS VECTORS
+		Marker originMarker = new Marker(-5.8509273, 43.3637619);
+		originMarker.setIcon(new ThemeResource("icons/marker.png"), 16, 16);
+		markerLayer.addMarker(originMarker);
+		
+		Marker destinationMarker = new Marker(-5.6619264, 43.5452608);
+		destinationMarker.setIcon(new ThemeResource("icons/marker.png"), 16, 16);
+		markerLayer.addMarker(destinationMarker);
+		
+		PolyLine testRoute = new PolyLine();
+		testRoute.setPoints(new Point(-5.8509273, 43.3637619), new Point(-5.6619264, 43.5452608));
+		polylinesLayer.addVector(testRoute);
 	}
 
 	private VerticalLayout buildMainLayout() {
@@ -74,11 +98,14 @@ public class MainApplication extends com.vaadin.Application {
 		routeOpenLayersMap.setHeight("550px");
 		openStreetMapLayer = new OpenStreetMapLayer();
 		googleStreetMapLayer = new GoogleStreetMapLayer();
+		polylinesLayer = new org.vaadin.vol.VectorLayer();
 		markerLayer = new MarkerLayer();
+		
 
 		// Apply Map Layers
 		routeOpenLayersMap.addLayer(openStreetMapLayer);
 		routeOpenLayersMap.addLayer(googleStreetMapLayer);
+		routeOpenLayersMap.addLayer(polylinesLayer);
 		routeOpenLayersMap.addLayer(markerLayer);
 
 		routeOpenLayersMap.setCenter(22.30083, 60.452541);
