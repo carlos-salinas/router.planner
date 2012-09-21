@@ -16,17 +16,13 @@
 
 package com.thingtrack.route.planner;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.vaadin.addons.locationtextfield.GeocodedLocation;
 import org.vaadin.addons.locationtextfield.GoogleGeocoder;
 import org.vaadin.addons.locationtextfield.LocationTextField;
+import org.vaadin.vol.Bounds;
 import org.vaadin.vol.GoogleStreetMapLayer;
 import org.vaadin.vol.Marker;
 import org.vaadin.vol.MarkerLayer;
@@ -34,12 +30,20 @@ import org.vaadin.vol.OpenLayersMap;
 import org.vaadin.vol.OpenStreetMapLayer;
 import org.vaadin.vol.Point;
 import org.vaadin.vol.PolyLine;
-import org.vaadin.vol.Vector;
+import org.vaadin.vol.Popup;
+import org.vaadin.vol.Popup.PopupStyle;
 import org.vaadin.vol.VectorLayer;
 
+import com.thingtrack.route.planner.model.Leg;
+import com.thingtrack.route.planner.model.Maneuver;
+import com.thingtrack.route.planner.model.MapCoordinates;
+import com.thingtrack.route.planner.model.Route;
+import com.vaadin.data.Property;
+import com.vaadin.data.Property.ValueChangeEvent;
+import com.vaadin.event.MouseEvents.ClickEvent;
+import com.vaadin.event.MouseEvents.ClickListener;
 import com.vaadin.terminal.ThemeResource;
 import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Label;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 
@@ -49,6 +53,11 @@ import com.vaadin.ui.Window;
  */
 @SuppressWarnings("serial")
 public class MainApplication extends com.vaadin.Application {
+
+	private enum STOP_TYPE {
+
+		ORIGEN, DESTINO
+	}
 
 	private Window main = new Window("Route Planner Demo");
 	private OpenLayersMap routeOpenLayersMap;
@@ -71,19 +80,101 @@ public class MainApplication extends com.vaadin.Application {
 		setMainWindow(main);
 
 		setTheme("router.planner");
-		
-		//TEST OPENLAYERS VECTORS
-		Marker originMarker = new Marker(-5.8509273, 43.3637619);
-		originMarker.setIcon(new ThemeResource("icons/marker.png"), 16, 16);
-		markerLayer.addMarker(originMarker);
-		
-		Marker destinationMarker = new Marker(-5.6619264, 43.5452608);
-		destinationMarker.setIcon(new ThemeResource("icons/marker.png"), 16, 16);
-		markerLayer.addMarker(destinationMarker);
-		
-		PolyLine testRoute = new PolyLine();
-		testRoute.setPoints(new Point(-5.8509273, 43.3637619), new Point(-5.6619264, 43.5452608));
-		polylinesLayer.addVector(testRoute);
+
+		// Add UI logic
+		originStopLocationTextField
+				.addListener(new Property.ValueChangeListener() {
+
+					@Override
+					public void valueChange(ValueChangeEvent event) {
+
+						GeocodedLocation geocodedLocation = (GeocodedLocation) event
+								.getProperty().getValue();
+
+						if (geocodedLocation == null)
+							return;
+
+						if (originStopMarker != null)
+							markerLayer.removeComponent(originStopMarker);
+
+						originStopMarker = createStopMarker(STOP_TYPE.ORIGEN,
+								geocodedLocation);
+						markerLayer.addComponent(originStopMarker);
+
+						// Center and Zoom the map
+						Bounds bounds = null;
+
+						if (destinationStopMarker != null) {
+
+							Point originPoint = new Point(originStopMarker
+									.getLon(), originStopMarker.getLat());
+							Point destinationPoint = new Point(
+									destinationStopMarker.getLon(),
+									destinationStopMarker.getLat());
+							bounds = new Bounds(originPoint, originPoint,
+									destinationPoint, destinationPoint);
+
+							routeOpenLayersMap.zoomToExtent(bounds);
+
+						} else {
+							routeOpenLayersMap.setCenter(
+									originStopMarker.getLon(),
+									originStopMarker.getLat());
+							routeOpenLayersMap.setZoom(18);
+						}
+						
+						routeCalculation(originStopMarker, destinationStopMarker);
+
+					}
+				});
+
+		destinationStopLocationTextField
+				.addListener(new Property.ValueChangeListener() {
+
+					@Override
+					public void valueChange(ValueChangeEvent event) {
+
+						GeocodedLocation geocodedLocation = (GeocodedLocation) event
+								.getProperty().getValue();
+
+						if (geocodedLocation == null)
+							return;
+
+						if (destinationStopMarker != null)
+							markerLayer.removeComponent(destinationStopMarker);
+
+						destinationStopMarker = createStopMarker(
+								STOP_TYPE.DESTINO, geocodedLocation);
+
+						markerLayer.addComponent(destinationStopMarker);
+
+						// Center and Zoom the map
+						Bounds bounds = null;
+
+						if (originStopMarker != null) {
+
+							Point originPoint = new Point(originStopMarker
+									.getLon(), originStopMarker.getLat());
+							Point destinationPoint = new Point(
+									destinationStopMarker.getLon(),
+									destinationStopMarker.getLat());
+
+							bounds = new Bounds(originPoint, originPoint,
+									destinationPoint, destinationPoint);
+
+							routeOpenLayersMap.zoomToExtent(bounds);
+
+						} else {
+							routeOpenLayersMap.setCenter(
+									originStopMarker.getLon(),
+									originStopMarker.getLat());
+							routeOpenLayersMap.setZoom(18);
+						}
+						
+						routeCalculation(originStopMarker, destinationStopMarker);
+					}
+				});
+
 	}
 
 	private VerticalLayout buildMainLayout() {
@@ -100,7 +191,6 @@ public class MainApplication extends com.vaadin.Application {
 		googleStreetMapLayer = new GoogleStreetMapLayer();
 		polylinesLayer = new org.vaadin.vol.VectorLayer();
 		markerLayer = new MarkerLayer();
-		
 
 		// Apply Map Layers
 		routeOpenLayersMap.addLayer(openStreetMapLayer);
@@ -159,6 +249,92 @@ public class MainApplication extends com.vaadin.Application {
 				destinationStopLocationTextField, 1.0f);
 
 		return stopLocationTextFieldLayout;
+	}
+
+	private Marker createStopMarker(STOP_TYPE stopType,
+			GeocodedLocation geocodedLocation) {
+
+		Marker marker = new Marker(geocodedLocation.getLon(),
+				geocodedLocation.getLat());
+		marker.setIcon(new ThemeResource("icons/marker.png"), 24, 24);
+
+		String street = geocodedLocation.getGeocodedAddress() != null ? geocodedLocation
+				.getGeocodedAddress() : "";
+		// String locality = geocodedLocation.getLocality() != null ?
+		// geocodedLocation
+		// .getLocality() : "";
+		// String postalCode = geocodedLocation.getPostalCode() != null ?
+		// geocodedLocation
+		// .getPostalCode() : "";
+		// String province = geocodedLocation.getAdministrativeAreaLevel1() !=
+		// null ? geocodedLocation
+		// .getAdministrativeAreaLevel1() : "";
+		// String country = geocodedLocation.getCountry() != null ?
+		// geocodedLocation
+		// .getCountry() : "";
+
+		final Popup popup = new Popup(marker.getLon(), marker.getLat(),
+				"<p><b>" + stopType.toString()
+						+ "</b></p><p><b>Dirección: </b>" + street);
+		// + "</p><p><b> Localidad: </b>" + locality
+		// + "</p><p><b>Código Postal: </b>" + postalCode
+		// + "</p><p><b> Provincia: </b>" + province
+		// + "</p><p><b> País: </b>" + country + "</p>");
+		popup.setPopupStyle(PopupStyle.FRAMED_CLOUD);
+		popup.setAnchor(marker);
+
+		marker.addClickListener(new ClickListener() {
+
+			@Override
+			public void click(ClickEvent event) {
+
+				routeOpenLayersMap.addPopup(popup);
+			}
+		});
+
+		return marker;
+	}
+
+	private void routeCalculation(Marker originStopMarker,
+			Marker destinationStopMarker) {
+
+		if (originStopMarker == null || destinationStopMarker == null)
+			return;
+
+		MapQuestOpenDirectionsService mapQuestOpenDirectionsService = MapQuestOpenDirectionsService
+				.getInstance();
+		
+		try {
+			Route calculatedRoute = mapQuestOpenDirectionsService.getRoute(new MapCoordinates(originStopMarker.getLat(), originStopMarker.getLon()), new MapCoordinates(destinationStopMarker.getLat(), destinationStopMarker.getLon()));
+			//Draw the path
+			drawRoute(calculatedRoute);
+			
+			
+			
+		} catch (RoutePlannerException e) {
+			e.printStackTrace();
+		}
+
+	}
+	
+	private void drawRoute(Route route){
+		
+		List<Point> routePoints = new ArrayList<Point>();
+		
+		for(MapCoordinates coordinates : route.getShape().getShapePoints())
+			routePoints.add(new Point(coordinates.getLongitude(), coordinates.getLatitude()));
+		
+		
+		PolyLine routePath = new PolyLine();
+		
+		Point[] points = new Point[routePoints.size()];
+		routePoints.toArray(points);
+		routePath.setPoints(points);
+		polylinesLayer.addVector(routePath);
+		
+		getMainWindow().showNotification("Kilometros totales: " + route.getDistance() + " y consumo aproximado:" + route.getFuelUsed());
+		
+		
 	}
 
 }

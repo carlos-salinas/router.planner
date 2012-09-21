@@ -7,9 +7,10 @@ public class MapCoordinates implements Serializable {
 	private double longitude;
 	private double latitude;
 
-	public MapCoordinates(double longitude, double latitude) {
-		this.longitude = longitude;
+	public MapCoordinates(double latitude, double longitude) {
+		
 		this.latitude = latitude;
+		this.longitude = longitude;
 	}
 	
 	public double getLongitude() {
