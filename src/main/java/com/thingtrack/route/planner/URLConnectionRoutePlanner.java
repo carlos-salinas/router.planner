@@ -7,6 +7,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.json.JSONException;
+
 import com.thingtrack.route.planner.model.MapCoordinates;
 import com.thingtrack.route.planner.model.Route;
 
@@ -26,7 +28,7 @@ public abstract class URLConnectionRoutePlanner<T extends Route> {
 	 *             if subclass uses {@link java.net.URLEncoder} and it fails
 	 */
 	protected abstract String getURL(String... addresses)
-			throws UnsupportedEncodingException;
+			throws UnsupportedEncodingException, JSONException;
 
 	/**
 	 * Retrieve the full URL to fetch
@@ -37,9 +39,10 @@ public abstract class URLConnectionRoutePlanner<T extends Route> {
 	 * @return full URL
 	 * @throws UnsupportedEncodingException
 	 *             if subclass uses {@link java.net.URLEncoder} and it fails
+	 * @throws JSONException 
 	 */
 	protected abstract String getURL(MapCoordinates... coordinates)
-			throws UnsupportedEncodingException;
+			throws UnsupportedEncodingException, JSONException;
 
 	
 	

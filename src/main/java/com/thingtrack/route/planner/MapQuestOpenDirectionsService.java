@@ -10,10 +10,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.thingtrack.route.planner.model.Leg;
+import com.thingtrack.route.planner.model.Location;
 import com.thingtrack.route.planner.model.Maneuver;
 import com.thingtrack.route.planner.model.MapCoordinates;
 import com.thingtrack.route.planner.model.Route;
 import com.thingtrack.route.planner.model.Shape;
+import com.thingtrack.route.planner.model.Location.AdminAreaType;
 
 public final class MapQuestOpenDirectionsService extends
 		URLConnectionRoutePlanner<Route> {
@@ -157,11 +159,12 @@ public final class MapQuestOpenDirectionsService extends
 		}
 	}
 
-	private static final String BASE_URL = "http://open.mapquestapi.com/directions/v1/route?generalize=10&outFormat=json&unit=k";
+	private static final String BASE_URL = "http://open.mapquestapi.com/directions/v1/route?generalize=0&outFormat=json&unit=k";
 
 	// URL COMMON PARAMETERS
 	public static final String START_PARAM_KEY = "from=";
 	public static final String END_PARAM_KEY = "to=";
+	public static final String INTERMEDIATE_LOCATIONS ="json=";
 	public static final String AMBIGUITIES_PARAM_KEY = "ambiguities=";
 	public static final String AVOIDS_PARAM_KEY = "avoids=";
 	public static final String ROUTE_TYPE_PARAM_KEY = "routeType=";
@@ -195,7 +198,7 @@ public final class MapQuestOpenDirectionsService extends
 
 	@Override
 	protected String getURL(String... addresses)
-			throws UnsupportedEncodingException {
+			throws UnsupportedEncodingException, JSONException {
 
 		StringBuilder sb = new StringBuilder();
 
@@ -216,24 +219,45 @@ public final class MapQuestOpenDirectionsService extends
 
 	@Override
 	protected String getURL(MapCoordinates... coordinates)
-			throws UnsupportedEncodingException {
+			throws UnsupportedEncodingException, JSONException {
 
 		StringBuilder sb = new StringBuilder();
+		
+		JSONObject intermediateLocsJsonObject = new JSONObject();
+		JSONArray intermediateLocsJsonArray = new JSONArray();
 
 		for (int i = 0; i < coordinates.length; i++) {
 			if (i == 0) {
-				sb.append("&" + START_PARAM_KEY + coordinates[i].getLatitude()
-						+ "," + coordinates[i].getLongitude());
-			} else if (i == coordinates.length - 1) {
+				sb.append("&" + START_PARAM_KEY + coordinates[i].getLat()
+						+ "," + coordinates[i].getLng());
+			} else /*if (i == coordinates.length - 1)*/ {
 
-				sb.append("&" + END_PARAM_KEY + coordinates[i].getLatitude()
-						+ "," + coordinates[i].getLongitude());
+				sb.append("&" + END_PARAM_KEY + coordinates[i].getLat()
+						+ "," + coordinates[i].getLng());
 			}
+//			else{
+//				
+//				JSONObject latLngJsonObject = new JSONObject();
+//				JSONObject coordinatesJsonObject = new JSONObject();
+//				coordinatesJsonObject.put("lat", coordinates[i].getLat());
+//				coordinatesJsonObject.put("lng", coordinates[i].getLng());
+//				latLngJsonObject.put("latLng", coordinatesJsonObject);
+//				
+//				intermediateLocsJsonArray.put(latLngJsonObject);
+//				
+//			}
 		}
-
+		
+		//Add intermediate stops request param
+		if(intermediateLocsJsonArray.length() > 0){
+			
+			intermediateLocsJsonObject.put("locations", intermediateLocsJsonArray);
+			sb.append("&" + INTERMEDIATE_LOCATIONS + intermediateLocsJsonObject.toString());
+		}
+		
 		return BASE_URL + sb.toString();
 	}
-
+	
 	@Override
 	protected Route createRoute(String input, MapCoordinates... coordinates)
 			throws RoutePlannerException {
@@ -246,20 +270,23 @@ public final class MapQuestOpenDirectionsService extends
 
 			JSONObject routeJsonObject = obj.getJSONObject("route");
 
-			route.setHasTollRoad(routeJsonObject.getBoolean("hasTollRoad"));
-			route.setHasFerry(routeJsonObject.getBoolean("hasFerry"));
-			route.setHasHighway(routeJsonObject.getBoolean("hasHighway"));
+			route.setHasTollRoad(routeJsonObject.optBoolean("hasTollRoad"));
+			route.setHasFerry(routeJsonObject.optBoolean("hasFerry"));
+			route.setHasHighway(routeJsonObject.optBoolean("hasHighway"));
 			route.setHasSeasonalClosure(routeJsonObject
-					.getBoolean("hasSeasonalClosure"));
-			route.setHasUnpaved(routeJsonObject.getBoolean("hasUnpaved"));
+					.optBoolean("hasSeasonalClosure"));
+			route.setHasUnpaved(routeJsonObject.optBoolean("hasUnpaved"));
 			route.setHasCountryCross(routeJsonObject
-					.getBoolean("hasCountryCross"));
+					.optBoolean("hasCountryCross"));
 
 			route.setDistance(routeJsonObject.getDouble("distance"));
 			route.setFuelUsed(routeJsonObject.getDouble("fuelUsed"));
 
 			// Legs
 			route.setLegs(createLegs(routeJsonObject.getJSONArray("legs")));
+			
+			//Locations
+			route.setLocations(createLocations(routeJsonObject.getJSONArray("locations")));
 
 			// Shape
 			route.setShape(createShape(routeJsonObject.getJSONObject("shape")));
@@ -283,13 +310,13 @@ public final class MapQuestOpenDirectionsService extends
 			leg.setOrigNarrative(legJsonObject.getString("origNarrative"));
 			leg.setDestIndex(legJsonObject.getInt("destIndex"));
 			leg.setDestNarrative(legJsonObject.getString("destNarrative"));
-			leg.setHasTollRoad(legJsonObject.getBoolean("hasTollRoad"));
-			leg.setHasFerry(legJsonObject.getBoolean("hasFerry"));
-			leg.setHasHighway(legJsonObject.getBoolean("hasHighway"));
+			leg.setHasTollRoad(legJsonObject.optBoolean("hasTollRoad"));
+			leg.setHasFerry(legJsonObject.optBoolean("hasFerry"));
+			leg.setHasHighway(legJsonObject.optBoolean("hasHighway"));
 			leg.setHasSeasonalClosure(legJsonObject
-					.getBoolean("hasSeasonalClosure"));
-			leg.setHasUnpaved(legJsonObject.getBoolean("hasUnpaved"));
-			leg.setHasCountryCross(legJsonObject.getBoolean("hasCountryCross"));
+					.optBoolean("hasSeasonalClosure"));
+			leg.setHasUnpaved(legJsonObject.optBoolean("hasUnpaved"));
+			leg.setHasCountryCross(legJsonObject.optBoolean("hasCountryCross"));
 			leg.setIndex(legJsonObject.getInt("index"));
 			leg.setTime(legJsonObject.getInt("time"));
 			leg.setFormattedTime(legJsonObject.getString("formattedTime"));
@@ -361,5 +388,84 @@ public final class MapQuestOpenDirectionsService extends
 
 		return shape;
 
+	}
+	
+	private List<Location> createLocations(JSONArray inputArray) throws JSONException{
+		
+		List<Location> locations = new ArrayList<Location>();
+		
+
+		for (int i = 0; i < inputArray.length(); i++) {
+			
+			Location location = new Location();
+			JSONObject locationJsonObject = inputArray.getJSONObject(i);
+			
+			location.setAdminArea1(locationJsonObject.getString("adminArea1"));
+			location.setAdminArea1Type(getAdminAreaType(locationJsonObject.getString("adminArea1Type")));
+			
+			location.setAdminArea3(locationJsonObject.getString("adminArea3"));
+			location.setAdminArea3Type(getAdminAreaType(locationJsonObject.getString("adminArea3Type")));
+			
+			location.setAdminArea4(locationJsonObject.getString("adminArea4"));
+			location.setAdminArea4Type(getAdminAreaType(locationJsonObject.getString("adminArea4Type")));
+			
+			location.setAdminArea5(locationJsonObject.getString("adminArea5"));
+			location.setAdminArea5Type(getAdminAreaType(locationJsonObject.getString("adminArea5Type")));
+			
+			JSONObject displayLatLngJsonObject = locationJsonObject
+					.getJSONObject("displayLatLng");
+
+			location.setDisplayLatLng(new MapCoordinates(displayLatLngJsonObject
+					.getDouble("lat"), displayLatLngJsonObject.getDouble("lng")));
+
+			location.setDragPoint(locationJsonObject.getBoolean("dragPoint"));
+			
+			location.setGeocodeQuality(locationJsonObject.getString("geocodeQuality"));
+			location.setGeocodeQualityCode(locationJsonObject.getString("geocodeQualityCode"));
+			
+			JSONObject latLngJsonObject = locationJsonObject
+					.getJSONObject("latLng");
+
+			location.setLatLng(new MapCoordinates(latLngJsonObject
+					.getDouble("lat"), latLngJsonObject.getDouble("lng")));
+			
+			location.setLinkId(locationJsonObject.getInt("linkId"));
+			
+			location.setPostalCode(locationJsonObject.getString("postalCode"));
+			
+			location.setSideOFStreet(locationJsonObject.getString("sideOfStreet"));
+			
+			location.setStreet(locationJsonObject.getString("street"));
+			
+			location.setType(locationJsonObject.getString("type"));
+
+
+			locations.add(location);
+		}
+		
+		return locations;
+		
+	}
+	
+	private Location.AdminAreaType getAdminAreaType(String adminAreaType){
+		
+		if(Location.AdminAreaType.COUNTRY.getValue().equals(adminAreaType)){
+			
+			return AdminAreaType.COUNTRY;
+		}
+		if(Location.AdminAreaType.STATE.getValue().equals(adminAreaType)){
+			
+			return AdminAreaType.STATE;
+		}
+		if(Location.AdminAreaType.COUNTY.getValue().equals(adminAreaType)){
+		
+			return AdminAreaType.COUNTY;
+		}
+		if(Location.AdminAreaType.CITY.getValue().equals(adminAreaType)){
+			
+			return AdminAreaType.CITY;
+		}
+		
+		return AdminAreaType.UNKNOWN;
 	}
 }

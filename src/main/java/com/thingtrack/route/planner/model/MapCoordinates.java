@@ -4,29 +4,29 @@ import java.io.Serializable;
 
 public class MapCoordinates implements Serializable {
 	
-	private double longitude;
-	private double latitude;
+	private double lng;
+	private double lat;
 
 	public MapCoordinates(double latitude, double longitude) {
 		
-		this.latitude = latitude;
-		this.longitude = longitude;
+		this.lat = latitude;
+		this.lng = longitude;
 	}
 	
-	public double getLongitude() {
-		return longitude;
+	public double getLng() {
+		return lng;
 	}
 
-	public double getLatitude() {
-		return latitude;
+	public double getLat() {
+		return lat;
 	}
 
-	public void setLongitude(double longitude) {
-		this.longitude = longitude;
+	public void setLng(double longitude) {
+		this.lng = longitude;
 	}
 
-	public void setLatitude(double latitude) {
-		this.latitude = latitude;
+	public void setLat(double latitude) {
+		this.lat = latitude;
 	}
 
 }
