@@ -9,6 +9,7 @@
     <servlet>
         <servlet-name>Vaadin Application Servlet</servlet-name>
         <servlet-class>com.vaadin.terminal.gwt.server.ApplicationServlet</servlet-class>
+<!-- 		<servlet-class>com.thingtrack.route.planner.InvientChartsApplicationServlet</servlet-class> -->
         <init-param>
             <description>Vaadin application class to start</description>
             <param-name>application</param-name>

@@ -6,7 +6,7 @@ import java.util.List;
 
 public class Maneuver implements Serializable {
 
-	enum Direcction{
+	public enum Direction{
 		
 		NONE,
 		NORTH,
@@ -19,7 +19,7 @@ public class Maneuver implements Serializable {
 		EAST;
 	}
 	
-	enum TurnType{
+	public enum TurnType{
 		
 		STRAIGHT,
 		SLIGHT_RIGHT,
@@ -42,7 +42,7 @@ public class Maneuver implements Serializable {
 		STRAIGHT_FORK;
 	}
 	
-	enum TransportMode{
+	public enum TransportMode{
 		
 		AUTO;
 		//TODO: Define the rest of modes
@@ -50,7 +50,7 @@ public class Maneuver implements Serializable {
 	
 	private int index;
 	private int attributes;
-	private Direcction direcction;
+	private Direction direcction;
 	private double distance;
 	private String formattedTime;
 	private String iconURl;
@@ -64,6 +64,7 @@ public class Maneuver implements Serializable {
 	private String narrative;
 	private TransportMode transportMode;
 	private List<Sign> signs = new ArrayList<Sign>();
+	
 	public int getIndex() {
 		return index;
 	}
@@ -76,10 +77,10 @@ public class Maneuver implements Serializable {
 	public void setAttributes(int attributes) {
 		this.attributes = attributes;
 	}
-	public Direcction getDirecction() {
+	public Direction getDirection() {
 		return direcction;
 	}
-	public void setDirecction(Direcction direcction) {
+	public void setDirection(Direction direcction) {
 		this.direcction = direcction;
 	}
 	public double getDistance() {
@@ -94,10 +95,10 @@ public class Maneuver implements Serializable {
 	public void setFormattedTime(String formattedTime) {
 		this.formattedTime = formattedTime;
 	}
-	public String getIconURl() {
+	public String getIconUrl() {
 		return iconURl;
 	}
-	public void setIconURl(String iconURl) {
+	public void setIconUrl(String iconURl) {
 		this.iconURl = iconURl;
 	}
 	public TurnType getTurnType() {
@@ -124,10 +125,10 @@ public class Maneuver implements Serializable {
 	public void setTime(int time) {
 		this.time = time;
 	}
-	public String getMapURl() {
+	public String getMapUrl() {
 		return mapURl;
 	}
-	public void setMapURl(String mapURl) {
+	public void setMapUrl(String mapURl) {
 		this.mapURl = mapURl;
 	}
 	public String getNarrative() {
