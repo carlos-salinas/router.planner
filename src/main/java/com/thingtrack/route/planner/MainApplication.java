@@ -38,6 +38,7 @@ public class MainApplication extends com.vaadin.Application {
 		mainLayout = buildMainLayout();
 		main.setContent(mainLayout);
 		
+		setTheme("router.planner"); 
 		setMainWindow(main);
 		
 	}
